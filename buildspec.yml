@@ -1,36 +1,42 @@
 version: 0.2
+
+env:
+  variables:
+    REPOSITORY_URI: 265980493815.dkr.ecr.us-east-1.amazonaws.com/spring-demo-ecr
+    IMAGE_TAG: build-$(echo $CODEBUILD_BUILD_ID | awk -F":" '{print $2}')
+    DOCKER_CONTAINER_NAME: spring-demo-ecr
+
 phases:
+  install:
+    runtime-versions:
+      java: corretto21
   pre_build:
     commands:
-      - echo Logging in to Amazon ECR....
+      - echo "=== Logging in to Amazon ECR ==="
       - aws --version
-      #- $(aws ecr get-login --region ap-south-1 --no-include-email)
-      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 265980493815.dkr.ecr.us-east-1.amazonaws.com
-      - # Replace with this to your repository URI
-      - REPOSITORY_URI=265980493815.dkr.ecr.us-east-1.amazonaws.com/spring-demo-ecr
-      - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_ID | awk -F":" '{print $2}')
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $REPOSITORY_URI
   build:
     commands:
-      - echo Build started on `date`
-      - echo building the Jar file
-      - mvn clean install
-      - echo Building the Docker image...
+      - echo "=== Build started on $(date) ==="
+      - echo "Building the JAR file..."
+      - mvn clean install -DskipTests
+      - echo "Building the Docker image..."
       - docker build -t $REPOSITORY_URI:latest .
       - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
   post_build:
     commands:
-      - echo Build completed on `date`
-      - echo pushing to repo
+      - echo "=== Build completed on $(date) ==="
+      - echo "Repository URI: $REPOSITORY_URI"
+      - echo "Image Tag: $IMAGE_TAG"
+      - echo "Pushing Docker images to ECR..."
       - docker push $REPOSITORY_URI:latest
       - docker push $REPOSITORY_URI:$IMAGE_TAG
-      - echo Writing image definitions file...
-      # Give your container name
-      - DOCKER_CONTAINER_NAME=spring-demo-ecr
+      - echo "Writing imagedefinitions.json..."
       - printf '[{"name":"%s","imageUri":"%s"}]' $DOCKER_CONTAINER_NAME $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
-      - echo $DOCKER_CONTAINER_NAME
-      - echo printing imagedefinitions.json
+      - echo "=== imagedefinitions.json ==="
       - cat imagedefinitions.json
+
 artifacts:
   files:
     - imagedefinitions.json
-    - target/springboot-aws-deploy.jar
+    - target/springboot-aws-deploy-service.jar
