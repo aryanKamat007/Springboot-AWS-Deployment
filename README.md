@@ -11,7 +11,7 @@ This project demonstrates a **complete CI/CD pipeline** for deploying a Spring B
 
 ## 📌 Architecture Overview
 
-![Architecture Diagram]() <!-- Replace with your actual diagram path -->
+![Architecture Diagram](Architecture_diag.png) <!-- Replace with your actual diagram path -->
 
 ### End-to-End Workflow
 1. **Developer pushes code** to a GitHub repository.
